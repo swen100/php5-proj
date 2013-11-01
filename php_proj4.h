@@ -24,6 +24,7 @@ PHP_MINFO_FUNCTION(proj4);
 
 ZEND_FUNCTION(pj_init_plus);
 ZEND_FUNCTION(pj_transform);
+ZEND_FUNCTION(pj_transform_point);
 ZEND_FUNCTION(pj_is_latlong);
 ZEND_FUNCTION(pj_is_geocent);
 ZEND_FUNCTION(pj_get_def);
