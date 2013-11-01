@@ -14,6 +14,7 @@ int le_proj4;
 static zend_function_entry proj4_functions[] = {
     ZEND_FE(pj_init_plus, NULL)
 	ZEND_FE(pj_transform, NULL)
+	ZEND_FE(pj_transform_point, NULL)
 	ZEND_FE(pj_is_latlong, NULL)
 	ZEND_FE(pj_is_geocent, NULL)
 	ZEND_FE(pj_get_def, NULL)
@@ -255,6 +256,64 @@ ZEND_FUNCTION(pj_transform)
 	if (p != 0) {
 		RETURN_DOUBLE(p);
 	}
+}
+
+ZEND_FUNCTION(pj_transform_point) {
+    int p;
+    double x, y, z = 0;
+    zval *zx, *zy, *zz;
+    zval *srcDefn, *tgtDefn;
+    projPJ srcProj, tgtProj;
+
+    MAKE_STD_ZVAL(zx);
+    MAKE_STD_ZVAL(zy);
+    MAKE_STD_ZVAL(zz);
+        
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rrzz|z", &srcDefn, &tgtDefn, &zx, &zy, &zz) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    ZEND_FETCH_RESOURCE(srcProj, projPJ*, &srcDefn, -1, PHP_PROJ4_RES_NAME, le_proj4);
+    ZEND_FETCH_RESOURCE(tgtProj, projPJ*, &tgtDefn, -1, PHP_PROJ4_RES_NAME, le_proj4);
+
+    convert_to_double_ex(&zx);
+    convert_to_double_ex(&zy);
+    x = Z_DVAL_P(zx);
+    y = Z_DVAL_P(zy);
+
+    switch(Z_TYPE_P(zz)) {
+        case IS_DOUBLE:
+            z = Z_DVAL_P(zz);
+            break;
+
+        case IS_LONG:
+        case IS_STRING:
+            convert_to_double_ex(&zz);
+            z = Z_DVAL_P(zz);
+            break;
+    }
+                
+    // deg2rad
+    if (pj_is_latlong(srcProj) == 1) {
+        x = (x / 180.0) * M_PI;
+        y = (y / 180.0) * M_PI;
+    }
+
+    p = pj_transform(srcProj, tgtProj, 1, 0, &x, &y, &z);
+    if (p != 0) {
+        RETURN_DOUBLE(p);
+    }
+
+    // rad2deg
+    if (pj_is_latlong(tgtProj) == 1) {
+        x = (x / M_PI) * 180;
+        y = (y / M_PI) * 180;
+    }
+
+    array_init(return_value);
+    add_assoc_double(return_value, "x", x);
+    add_assoc_double(return_value, "y", y);
+    add_assoc_double(return_value, "z", z);
 }
 
 ZEND_FUNCTION(pj_is_latlong)
