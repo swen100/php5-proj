@@ -308,7 +308,6 @@ ZEND_FUNCTION(pj_transform_point) {
     zval *result;
     zval  *srcDefn, *tgtDefn;
     projPJ wgsProj, srcProj, tgtProj;
-    char *wgsProjDefn = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs";
 
     MAKE_STD_ZVAL(zx);
     MAKE_STD_ZVAL(zy);
@@ -347,17 +346,14 @@ ZEND_FUNCTION(pj_transform_point) {
      */
     if (!pj_is_latlong(srcProj) && !pj_is_latlong(tgtProj)) {
         
-        wgsProj = pj_init_plus( wgsProjDefn);
+        wgsProj = pj_init_plus( "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs" );
         if (wgsProj == NULL) {
             RETURN_FALSE;
         }
         
-        php_printf("srcProj not of LatLong<br>\n");
         pj_transform(srcProj, wgsProj, 1, 0, &x, &y, &z);
         x *= RAD_TO_DEG;
         y *= RAD_TO_DEG;
-        php_printf("x = %f <br>\n", x);
-        php_printf("y = %f <br>\n", y);
         srcProj = wgsProj;
     }
     
