@@ -252,7 +252,6 @@ ZEND_FUNCTION(pj_transform) {
     }
 }
 
-//int pj_transform( projPJ src, projPJ dst, long point_count, int point_offset, double *x, double *y, double *z );
 static zval* pj_transform_point_static(projPJ srcProj, projPJ tgtProj, double x, double y, double z) {
     
     int p;
