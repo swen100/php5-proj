@@ -203,6 +203,8 @@ ZEND_FUNCTION(pj_transform) {
         p = pj_transform(srcProj, tgtProj, max_count, 0, x_input_array, y_input_array, z_input_array);
         if (p == 0) {
             zval *x_array_element, *y_array_element, *z_array_element;
+            zend_bool tgtProjIsLatLon = pj_is_latlong(tgtProj);
+                    
             ALLOC_INIT_ZVAL(x_array_element);
             ALLOC_INIT_ZVAL(y_array_element);
             ALLOC_INIT_ZVAL(z_array_element);
@@ -212,8 +214,8 @@ ZEND_FUNCTION(pj_transform) {
 
             int i;
             for (i = 0; i < max_count; i++) {
-                add_next_index_double(x_array_element, (pj_is_latlong(tgtProj) == 1 ? RAD_TO_DEG*x_input_array[i] : x_input_array[i]) );
-                add_next_index_double(y_array_element, (pj_is_latlong(tgtProj) == 1 ? RAD_TO_DEG*y_input_array[i] : y_input_array[i]) );
+                add_next_index_double(x_array_element, (tgtProjIsLatLon ? RAD_TO_DEG*x_input_array[i] : x_input_array[i]) );
+                add_next_index_double(y_array_element, (tgtProjIsLatLon ? RAD_TO_DEG*y_input_array[i] : y_input_array[i]) );
                 add_next_index_double(z_array_element, z_input_array[i]);
             }
 
@@ -231,7 +233,7 @@ ZEND_FUNCTION(pj_transform) {
 static zval* pj_transform_point_static(projPJ srcProj, projPJ tgtProj, double x, double y, double z) {
     
     int p;
-    zval *result;
+    zval *return_value;
 
     // deg2rad
     if (pj_is_latlong(srcProj) == 1) {
@@ -255,15 +257,15 @@ static zval* pj_transform_point_static(projPJ srcProj, projPJ tgtProj, double x,
         * ALLOC_INIT_ZVAL(zp)Allocate and initialize a zval
         * MAKE_STD_ZVAL(zp)Allocate, initialize and set NULL
         */
-        MAKE_STD_ZVAL(result);
-        array_init(result);
-        add_assoc_double(result, "x", x);
-        add_assoc_double(result, "y", y);
-        add_assoc_double(result, "z", z);
-        return result;
+        //MAKE_STD_ZVAL(return_value);
+        array_init(return_value);
+        add_assoc_double(return_value, "x", x);
+        add_assoc_double(return_value, "y", y);
+        add_assoc_double(return_value, "z", z);
+        return return_value;
     }
     
-    //RETURN_DOUBLE(p);
+    RETURN_DOUBLE(p);
 }
 
 /**
@@ -330,6 +332,12 @@ ZEND_FUNCTION(pj_transform_point) {
         add_assoc_double(return_value, "y", y);
         add_assoc_double(return_value, "z", z);
     }
+    /*
+    zval *temp;
+    ALLOC_INIT_ZVAL(temp);
+    temp = pj_transform_point_static(srcProj, tgtProj, x, y, z);
+    RETURN_ZVAL(temp, 1, 1);
+    */
 }
 
 ZEND_FUNCTION(pj_is_latlong) {
