@@ -255,7 +255,7 @@ ZEND_FUNCTION(pj_transform) {
 static zval* pj_transform_point_static(projPJ srcProj, projPJ tgtProj, double x, double y, double z) {
     
     int p;
-    zval *return_value;
+    zval *result;
 
     // deg2rad
     if (pj_is_latlong(srcProj) == 1) {
@@ -272,16 +272,22 @@ static zval* pj_transform_point_static(projPJ srcProj, projPJ tgtProj, double x,
             y *= RAD_TO_DEG;
         }
     
-        //MAKE_STD_ZVAL(return_value);
-        ALLOC_INIT_ZVAL(return_value);
-        array_init(return_value);
-        add_assoc_double(return_value, "x", x);
-        add_assoc_double(return_value, "y", y);
-        add_assoc_double(return_value, "z", z);
-        return return_value;
+        /*
+        * ALLOC_ZVAL(zp)Allocate a zval using emalloc()
+        * INIT_PZVAL(zp)Set reference count and isref 0
+        * INIT_ZVAL(zval)Initialize and set NULL, no pointer
+        * ALLOC_INIT_ZVAL(zp)Allocate and initialize a zval
+        * MAKE_STD_ZVAL(zp)Allocate, initialize and set NULL
+        */
+        MAKE_STD_ZVAL(result);
+        array_init(result);
+        add_assoc_double(result, "x", x);
+        add_assoc_double(result, "y", y);
+        add_assoc_double(result, "z", z);
+        return result;
     }
     
-    RETURN_DOUBLE(p);
+    //RETURN_DOUBLE(p);
 }
 
 /**
@@ -296,7 +302,7 @@ static zval* pj_transform_point_static(projPJ srcProj, projPJ tgtProj, double x,
 ZEND_FUNCTION(pj_transform_point) {
 
     double x, y, z = 0;
-    zval *result, *srcDefn, *tgtDefn;
+    zval *srcDefn, *tgtDefn;
     projPJ wgsProj, srcProj, tgtProj;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rrdd|d", &srcDefn, &tgtDefn, &x, &y, &z) == FAILURE) {
@@ -311,7 +317,7 @@ ZEND_FUNCTION(pj_transform_point) {
     }
     
     /*
-     * make sure to go over WGS84 for all transformation between non-LatLon-Projections
+     * make sure to go over WGS84 for all transformation between non-geographic coordinate systems
      */
     if (!pj_is_latlong(srcProj) && !pj_is_latlong(tgtProj)) {
         
@@ -326,9 +332,28 @@ ZEND_FUNCTION(pj_transform_point) {
         srcProj = wgsProj;
     }
     
-    ALLOC_INIT_ZVAL(result);
-    result = pj_transform_point_static(srcProj, tgtProj, x, y, z);
-    ZVAL_COPY_VALUE(return_value, result);
+    int p;
+
+    // deg2rad
+    if (pj_is_latlong(srcProj) == 1) {
+        x *= DEG_TO_RAD;
+        y *= DEG_TO_RAD;
+    }
+
+    p = pj_transform(srcProj, tgtProj, 1, 0, &x, &y, &z);
+    
+    if (p = 1) {
+        // rad2deg
+        if (pj_is_latlong(tgtProj) == 1) {
+            x *= RAD_TO_DEG;
+            y *= RAD_TO_DEG;
+        }
+        
+        array_init(return_value);
+        add_assoc_double(return_value, "x", x);
+        add_assoc_double(return_value, "y", y);
+        add_assoc_double(return_value, "z", z);
+    }
 }
 
 ZEND_FUNCTION(pj_is_latlong) {
