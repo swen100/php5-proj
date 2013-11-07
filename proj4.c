@@ -117,7 +117,6 @@ ZEND_FUNCTION(pj_transform) {
     ZEND_FETCH_RESOURCE(srcProj, projPJ*, &zpj_latlong, -1, PHP_PROJ4_RES_NAME, le_proj4);
     ZEND_FETCH_RESOURCE(tgtProj, projPJ*, &zpj_merc, -1, PHP_PROJ4_RES_NAME, le_proj4);
 
-    array_init(return_value);
 
     if (point_offset < 0) {
         point_offset = 0;
@@ -130,6 +129,9 @@ ZEND_FUNCTION(pj_transform) {
     HashTable *x_array, *y_array, *z_array;
     HashPosition x_position, y_position, z_position;
     int x_count, y_count, z_count = 0, max_count = -1, current_array_position = 1, added_array_elements = 0;
+    zend_bool srcProjIsLatLon = pj_is_latlong(srcProj);
+    zend_bool tgtProjIsLatLon = pj_is_latlong(tgtProj);
+    
     x_array = Z_ARRVAL_P(zx);
     y_array = Z_ARRVAL_P(zy);
     x_count = zend_hash_num_elements(x_array);
@@ -169,7 +171,7 @@ ZEND_FUNCTION(pj_transform) {
             }
 
             if ((Z_TYPE_PP(x_data) == IS_DOUBLE || Z_TYPE_PP(x_data) == IS_LONG || Z_TYPE_PP(x_data) == IS_STRING) &&
-                    (Z_TYPE_PP(y_data) == IS_DOUBLE || Z_TYPE_PP(y_data) == IS_LONG || Z_TYPE_PP(y_data) == IS_STRING)) {
+                (Z_TYPE_PP(y_data) == IS_DOUBLE || Z_TYPE_PP(y_data) == IS_LONG || Z_TYPE_PP(y_data) == IS_STRING)) {
                 if (z_count > 0) {
                     if (zend_hash_get_current_data_ex(z_array, (void**) &z_data, &z_position) == SUCCESS) {
                         //convert_to_double_ex(z_data);
@@ -184,14 +186,12 @@ ZEND_FUNCTION(pj_transform) {
                 if (Z_TYPE_PP(x_data) != IS_DOUBLE) {
                     convert_to_double_ex(x_data);
                 }
-                //current_x = Z_DVAL_PP(x_data);
                 if (Z_TYPE_PP(y_data) != IS_DOUBLE) {
                     convert_to_double_ex(y_data);
                 }
-                //current_y = Z_DVAL_PP(y_data);
 
-                x_input_array[current_input_array_index] = (pj_is_latlong(srcProj) == 1 ? DEG_TO_RAD*Z_DVAL_PP(x_data) : Z_DVAL_PP(x_data));
-                y_input_array[current_input_array_index] = (pj_is_latlong(srcProj) == 1 ? DEG_TO_RAD*Z_DVAL_PP(y_data) : Z_DVAL_PP(y_data));
+                x_input_array[current_input_array_index] = (srcProjIsLatLon ? DEG_TO_RAD*Z_DVAL_PP(x_data) : Z_DVAL_PP(x_data));
+                y_input_array[current_input_array_index] = (srcProjIsLatLon ? DEG_TO_RAD*Z_DVAL_PP(y_data) : Z_DVAL_PP(y_data));
                 z_input_array[current_input_array_index] = current_z;
                 current_input_array_index++;
                 added_array_elements++;
@@ -203,7 +203,6 @@ ZEND_FUNCTION(pj_transform) {
         p = pj_transform(srcProj, tgtProj, max_count, 0, x_input_array, y_input_array, z_input_array);
         if (p == 0) {
             zval *x_array_element, *y_array_element, *z_array_element;
-            zend_bool tgtProjIsLatLon = pj_is_latlong(tgtProj);
                     
             ALLOC_INIT_ZVAL(x_array_element);
             ALLOC_INIT_ZVAL(y_array_element);
@@ -212,6 +211,7 @@ ZEND_FUNCTION(pj_transform) {
             array_init(y_array_element);
             array_init(z_array_element);
 
+            array_init(return_value);
             int i;
             for (i = 0; i < max_count; i++) {
                 add_next_index_double(x_array_element, (tgtProjIsLatLon ? RAD_TO_DEG*x_input_array[i] : x_input_array[i]) );
