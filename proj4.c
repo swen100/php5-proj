@@ -332,7 +332,7 @@ ZEND_FUNCTION(pj_transform_point) {
         add_assoc_double(return_value, "y", y);
         add_assoc_double(return_value, "z", z);
     }
-    pj_free(wgsProj);
+    //pj_free(wgsProj);
     /*
     zval *temp;
     ALLOC_INIT_ZVAL(temp);
