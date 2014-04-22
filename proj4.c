@@ -294,10 +294,12 @@ ZEND_FUNCTION(pj_transform_point) {
         RETURN_FALSE;
     }
     
+    zend_bool projViaWgs84 = !pj_is_latlong(srcProj) && !pj_is_latlong(tgtProj);
+    
     /*
      * make sure to go over WGS84 for all transformation between non-geographic coordinate systems
      */
-    if (!pj_is_latlong(srcProj) && !pj_is_latlong(tgtProj)) {
+    if (projViaWgs84) {
         
         wgsProj = pj_init_plus( "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs" );
         if (wgsProj == NULL) {
@@ -332,7 +334,10 @@ ZEND_FUNCTION(pj_transform_point) {
         add_assoc_double(return_value, "y", y);
         add_assoc_double(return_value, "z", z);
     }
-    //pj_free(wgsProj);
+    
+    if(projViaWgs84) {
+        pj_free(wgsProj);
+    }
     /*
     zval *temp;
     ALLOC_INIT_ZVAL(temp);
