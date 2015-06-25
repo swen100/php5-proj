@@ -14,7 +14,7 @@
 #define PHP_PROJ4_RES_NAME "Proj.4"
 
 #ifdef ZTS
-#include <php5/TSRM/TSRM.h>
+#include <TSRM.h>
 #endif
 
 PHP_MINIT_FUNCTION(proj4);
