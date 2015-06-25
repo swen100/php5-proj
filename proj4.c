@@ -102,7 +102,22 @@ ZEND_FUNCTION(pj_transform) {
     zval *zx, *zy, *zz;
     zval *zpj_latlong, *zpj_merc;
     projPJ srcProj, tgtProj;
-
+    
+    zval **x_data, **y_data, **z_data;
+    HashTable *x_array, *y_array, *z_array;
+    HashPosition x_position, y_position, z_position;
+    
+    int x_count, y_count, z_count = 0, max_count = -1, current_array_position = 1, added_array_elements = 0;
+    zend_bool srcProjIsLatLon, tgtProjIsLatLon;
+    
+    double *x_input_array = 0;
+    double *y_input_array = 0;
+    double *z_input_array = 0;
+    
+    int current_input_array_index = 0;
+    double current_z = 0;
+    
+    int i;
 //    MAKE_STD_ZVAL(zx);
 //    MAKE_STD_ZVAL(zy);
 //    MAKE_STD_ZVAL(zz);
@@ -125,12 +140,12 @@ ZEND_FUNCTION(pj_transform) {
         point_count = 0;
     }
 
-    zval **x_data, **y_data, **z_data;
-    HashTable *x_array, *y_array, *z_array;
-    HashPosition x_position, y_position, z_position;
-    int x_count, y_count, z_count = 0, max_count = -1, current_array_position = 1, added_array_elements = 0;
-    zend_bool srcProjIsLatLon = pj_is_latlong(srcProj);
-    zend_bool tgtProjIsLatLon = pj_is_latlong(tgtProj);
+    
+    srcProjIsLatLon = pj_is_latlong(srcProj);
+    tgtProjIsLatLon = pj_is_latlong(tgtProj);
+    
+    
+    
     
     x_array = Z_ARRVAL_P(zx);
     y_array = Z_ARRVAL_P(zy);
@@ -149,14 +164,21 @@ ZEND_FUNCTION(pj_transform) {
             max_count = point_count;
         }
 
-        double x_input_array[max_count], y_input_array[max_count], z_input_array[max_count];
-        int current_input_array_index = 0;
+     //   array_init(x_input_array);
+     //   array_init(y_input_array);
+     //   array_init(z_input_array);
+     //   //add_assoc_double(x_input_array, "x", x);
+     //   add_index_null(x_input_array, max_count);
+     //   add_index_null(y_input_array, max_count);
+     //   add_index_null(z_input_array, max_count);
+        //double x_input_array[max_count], y_input_array[max_count], z_input_array[max_count];
+        
 
         if (z_count > 0) {
             zend_hash_internal_pointer_reset_ex(z_array, &z_position);
         }
 
-        double current_z = 0;
+        
         for (zend_hash_internal_pointer_reset_ex(x_array, &x_position), zend_hash_internal_pointer_reset_ex(y_array, &y_position);
                 zend_hash_get_current_data_ex(x_array, (void**) &x_data, &x_position) == SUCCESS && 
                 zend_hash_get_current_data_ex(y_array, (void**) &y_data, &y_position) == SUCCESS;
@@ -212,7 +234,7 @@ ZEND_FUNCTION(pj_transform) {
             array_init(z_array_element);
 
             array_init(return_value);
-            int i;
+            
             for (i = 0; i < max_count; i++) {
                 add_next_index_double(x_array_element, (tgtProjIsLatLon ? RAD_TO_DEG*x_input_array[i] : x_input_array[i]) );
                 add_next_index_double(y_array_element, (tgtProjIsLatLon ? RAD_TO_DEG*y_input_array[i] : y_input_array[i]) );
@@ -282,7 +304,9 @@ ZEND_FUNCTION(pj_transform_point) {
     double x, y, z = 0;
     zval *srcDefn, *tgtDefn;
     projPJ wgsProj, srcProj, tgtProj;
-
+    zend_bool projViaWgs84;
+    int p;
+    
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rrdd|d", &srcDefn, &tgtDefn, &x, &y, &z) == FAILURE) {
         RETURN_FALSE;
     }
@@ -294,7 +318,7 @@ ZEND_FUNCTION(pj_transform_point) {
         RETURN_FALSE;
     }
     
-    zend_bool projViaWgs84 = !pj_is_latlong(srcProj) && !pj_is_latlong(tgtProj);
+    projViaWgs84 = !pj_is_latlong(srcProj) && !pj_is_latlong(tgtProj);
     
     /*
      * make sure to go over WGS84 for all transformation between non-geographic coordinate systems
@@ -312,7 +336,7 @@ ZEND_FUNCTION(pj_transform_point) {
         srcProj = wgsProj;
     }
     
-    int p;
+    
 
     // deg2rad
     if (pj_is_latlong(srcProj) == 1) {
