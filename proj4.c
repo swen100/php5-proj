@@ -141,12 +141,8 @@ ZEND_FUNCTION(pj_transform) {
         point_count = 0;
     }
 
-
     srcProjIsLatLon = pj_is_latlong(srcProj);
     tgtProjIsLatLon = pj_is_latlong(tgtProj);
-
-
-
 
     x_array = Z_ARRVAL_P(zx);
     y_array = Z_ARRVAL_P(zy);
@@ -336,7 +332,6 @@ ZEND_FUNCTION(pj_transform_point) {
         y *= RAD_TO_DEG;
         srcProj = wgsProj;
     }
-
 
 
     // deg2rad
